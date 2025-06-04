@@ -1,7 +1,7 @@
 <!-- 
 To Use: Start with dash (-), then copy white box or green check box icon for new line
 
-Copy and paste green check box over white box to mark as 'done'
+Use the Emoji Table at the bottom to include status icons
 -->
 # Software Checklist
 
@@ -13,16 +13,16 @@ Copy and paste green check box over white box to mark as 'done'
 - :black_square_button: Configure WiFi
 - :black_square_button: Update system
 - :black_square_button: Install additional packages
-  - ⬜ Python
-  - ⬜ Camera drivers
-  - ⬜ Controller
+  - :black_square_button: Python
+  - :black_square_button: Camera drivers
+  - :black_square_button: Controller
 
 ## Development
 - :white_check_mark: Get camera working from Pi to PC
-- ⬜ Get controller working on Pi
-- ⬜ Build Python code
+- :black_square_button: Get controller working on Pi
+- :black_square_button: Build Python code
   - lotsa things here
-- ⬜ Built PC code?
+- :black_square_button: Built PC code?
   - a few things here
 
 ## Design Decisions
@@ -31,9 +31,9 @@ Copy and paste green check box over white box to mark as 'done'
   - Need 6 PWM pins
 - :bulb: Timezone
   - Should Pi and PC be set to timezone of competition location
-- ⬜ How does PC display status from Pi?
+- :question: How does PC display status from Pi?
   - Browser/Python/VNC?
-- ⬜ What status data is needed on the PC?
+- :question: What status data is needed on the PC?
 
 # Emoji Codes
 | Emoji | Code                     | Meaning |
@@ -42,11 +42,7 @@ Copy and paste green check box over white box to mark as 'done'
 | ✅     | `:white_check_mark:`     |Complete|
 | ❌     | `:x:`                    |Won't Do / No|
 | :question: | `:question:` | Question |
-| 🚀     | `:rocket:`               ||
 | 🐛     | `:bug:`                  |Problem/Bug|
 | 🔥     | `:fire:`                 |Hot Item / Priority|
 | 💡     | `:bulb:`                 |Idea / Need Input|
-| 🛠️     | `:hammer_and_wrench:`   ||
-| 📦     | `:package:`              ||
 | 👀     | `:eyes:`                 |Need Help|
-| 📝     | `:memo:`                 ||
