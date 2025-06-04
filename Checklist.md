@@ -18,7 +18,7 @@ Copy and paste green check box over white box to mark as 'done'
   - ⬜ Controller
 
 ## Development
-- ⬜ Get camera working from Pi to PC
+- ✅ Get camera working from Pi to PC
 - ⬜ Get controller working on Pi
 - ⬜ Build Python code
   - lotsa things here
