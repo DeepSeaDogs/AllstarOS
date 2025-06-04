@@ -34,3 +34,8 @@ Copy and paste green check box over white box to mark as 'done'
 - ⬜ How does PC display status from Pi?
   - Browser/Python/VNC?
 - ⬜ What status data is needed on the PC?
+
+# Emoji Codes
+|Emoji|Code|
+|-|-|
+|:white_check_mark:|```:white_check_mark:```|
