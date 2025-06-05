@@ -2,37 +2,71 @@
 import subprocess
 import signal
 import sys
+import threading
 import time
 
-process = subprocess.Popen(
-    ['python3', '-u','./heartbeat_sub.py'],  # Command to run. '-u' runs python 'unbuffered'
-    stdout=subprocess.PIPE,           # Captures the standard output (so you can read process.stdout in your script)
-    stderr=subprocess.STDOUT,         # Combine stderr into stdout
-    # stderr=subprocess.PIPE,         # Captures the standard error in a similar way to stdout.
-                                        # Useful if you want to read or log error messages from the subprocess.
-    text=True                         # Tells Python to treat input/output as text (str) instead of bytes
-)
+# Global to hold the subprocess so we can terminate it
+heartbeat_process = None
+time_process = None
 
-# Respond to CTRL-C
-def handle_interrupt(sig, frame):
-    print("\nCtrl+C detected. Terminating subs...")
-    process.terminate()
-    time.sleep(3)
-    # try:
-    #     process.wait(timeout=5)
-    # except subprocess.TimeoutExpired:
-    #     print("Heartbeat did not exit in time. Killing it.")
-    #     process.kill()
+last_hb = -1
+last_dtstamp = -1
+
+def run_heartbeat():
+    global heartbeat_process, last_hb 
+    heartbeat_process = subprocess.Popen(
+        ['python3', '-u', 'heartbeat_sub.py'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
+    )
+
+    for line in heartbeat_process.stdout:
+        print(f"[Heartbeat] {line.strip()}")
+        last_hb = line.strip()
+
+def run_time():
+    global time_process, last_dtstamp 
+    time_process = subprocess.Popen(
+        ['python3', '-u', 'time_sub.py'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
+    )
+
+    for line in time_process.stdout:
+        print(f"[Time] {line.strip()}")
+        last_dtstamp  = line.strip()
+
+def handle_sigint(sig, frame):
+    print("\n[Main]SIGINT received")
+    print("[Main]Terminating heartbeat...")
+    if heartbeat_process:
+        heartbeat_process.terminate()
+        heartbeat_process.wait()
+    print("[Main]Terminating time...")
+    if time_process:
+        time_process.terminate()
+        time_process.wait()
     sys.exit(0)
 
-# Register signal handler for Ctrl+C
-signal.signal(signal.SIGINT, handle_interrupt)
+# Set up SIGINT (Ctrl+C) handler
+signal.signal(signal.SIGINT, handle_sigint)
 
-# Read subprocess output line-by-line
-try:
-    for line in process.stdout:
-        print(f"[Subprocess] {line.strip()}")
-except Exception as e:
-    print(f"Error: {e}")
-    handle_interrupt(None, None)
+# Start the heartbeat in a thread
+heartbeat_thread = threading.Thread(target=run_heartbeat)
+heartbeat_thread.start()
+
+# Start the heartbeat in a thread
+time_thread = threading.Thread(target=run_time)
+time_thread.start()
+
+
+# Wait for the thread to finish (will happen after SIGINT)
+heartbeat_thread.join()
+time_thread.join()
+
+# while True:
+#     time.sleep(3)
+#     print(f"Time: {last_dtstamp }\nHeartbeat: {last_hb}")
 
