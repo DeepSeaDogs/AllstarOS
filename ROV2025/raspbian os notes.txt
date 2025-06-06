@@ -1,0 +1,31 @@
+hostname: raspberrypi.local
+username: pi
+password: raspberry
+
+Make new file/update existing file: sudo nano
+
+files: /etc/dhcpcd.con
+/etc/NetworkManager/config.d/1-unmanaged-eth0.config:
+[keyfile]
+unmanaged-device=interface-name:eth0
+
+To bypass DHCP, give it a throw-away static on your home LAN:
+
+sudo ip addr add 192.168.1.50/24 dev eth0
+sudo ip link set eth0 up
+
+Then ip addr show eth0 should list inet 192.168.1.50/24
+
+check ip address:
+ip addr show eth0 | grep inet
+
+check network manager logs:
+journalctl -u NetworkManager -f
+
+check network manager device status:
+nmcli device status
+
+Ethernet connection settings for pi:
+Address          Network  Gateway
+192.168.1.50 24  24       192.168.1.1
+Additional DNS servers: 192.168.1.1,8.8.8.8

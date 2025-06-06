@@ -1,0 +1,8 @@
+{
+    "defaults": {
+        "label": {
+            "font_size": 50,
+            "font_name": "fira_code" 
+        }
+    }
+}

@@ -1,0 +1,43 @@
+start prompt: ssh pi@192.168.2.2
+
+prompt: pi@blueos:~ $
+
+if prompt doesn't show up: CTRL + C
+
+start code-server: code-server
+
+kill code-server: pkill code-server
+
+find code-server processes: ps aux | grep code-server
+
+server address: 192.168.2.2:8082
+
+Get blueos logs: dmesg
+
+Check usb hubs: lsusb
+
+Load ucv driver: sudo modprobe uvcvideo
+
+Check ucv drivers: lsmod | grep uvcvideo
+Check /dev/video: ls -l /dev/video*
+
+
+(IMPORTANT) venv: cd /data
+source sitl-env/bin/activate
+
+(IMPORTANT) Activate firmware:  cd ~/ardupilot
+Tools/autotest/sim_vehicle.py \
+  -v ArduSub \
+  -f motorboat \
+  --out udp:192.168.2.111:14550
+
+Check running docker containers: docker ps --format "table {{.ID}}\t{{.Image}}\t{{.Names}}"
+
+Stop and delete docker container: docker rm -f <CONAINER_ID>	
+
+Activate video stream: gst-launch-1.0 -v \
+  v4l2src device=/dev/video36 ! \
+  "video/x-h264,stream-format=(string)byte-stream" ! \
+  h264parse ! rtph264pay config-interval=1 pt=96 ! \
+  udpsink host=127.0.0.1 port=5000
+
