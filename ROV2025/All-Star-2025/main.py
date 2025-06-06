@@ -8,7 +8,7 @@ import signal
 
 #Connect to the pi's camera stream
 #subprocess.run(["ssh", "pi@192.168.1.50", "pkill -f camera_stream.py || true"])
-#pi_proc = subprocess.run(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/camera_stream.py"])
+pi_proc = subprocess.run(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/camera_stream.py"])
 #pid = pi_proc.stdout
 #print(str(pid))
 
