@@ -8,26 +8,27 @@ import signal
 
 #Connect to the pi's camera stream
 #subprocess.run(["ssh", "pi@192.168.1.50", "pkill -f camera_stream.py || true"])
-pi_proc = subprocess.run(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/camera_stream.py"])
-#pid = pi_proc.stdout
-#print(str(pid))
+pi_proc = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/camera_stream.py"])
+pi_proc2 = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/camera_stream2.py"])
+
 
 #Get camera feed
-camera = CameraClient()
+camera1 = CameraClient(camera_number=0) #for /dev/video0
+camera2 = CameraClient(camera_number= 4) #for /dev/video4, uses port 8489
 
-#termine() will close ssh and camera
+
+#termine() will close ssh, cameras, and pygame
 def terminate():
     print("Terminating subprocesses...")
-    #kill_pi_proc = subprocess.run(["ssh", "pi@192.168.1.50", f"kill {pid}"])
-    #if kill_pi_proc.returncode == 0:
-    #    print(f"successuflly terminaed {pid}")
-    #else:
-    #print(f"Error terminating {pid}")
-    #pi_proc.terminate() for Popen
+    camera1.close() 
+    camera2.close()
+    pi_proc.kill()
+    pi_proc2.kill()
+    if pi_proc.poll() is None:
+        pi_proc.terminate() 
+        pi_proc2.terminate() 
     print("closing...")
-    camera.close() 
     pygame.quit()
-    None
 
 #signal_handle() will run if the window closes or ctrl + C is pressed
 def signal_handle(sig, frame):
@@ -114,11 +115,23 @@ while running:
     screen.fill((0,0,0))#Fill screen (background)
    
    #Get camera frames
-    frame_surface = camera.get_surface()
-    if frame_surface:
-        frame_surface = pygame.transform.scale(frame_surface, (Width - 100, label_y))
-        screen.blit(frame_surface,(50,0)) #Draw camera frame
-    
+    padding = 50
+    available_width = Width - (3 * padding)  # left + between + right
+    feed_width = available_width // 2
+    feed_height = Height // 2
+
+    # Left camera
+    frame_surface1 = camera1.get_surface()
+    if frame_surface1:
+        frame_surface1 = pygame.transform.scale(frame_surface1, (feed_width, feed_height))
+        screen.blit(frame_surface1, (padding, padding))
+
+    # Right camera
+    frame_surface2 = camera2.get_surface()
+    if frame_surface2:
+        frame_surface2 = pygame.transform.scale(frame_surface2, (feed_width, feed_height))
+        screen.blit(frame_surface2, (padding * 2 + feed_width, padding))
+
     UIManager.update(time_delta)
     UIManager.draw_ui(screen)
     pygame.display.flip()
