@@ -10,7 +10,6 @@ import json
 
 #Connect to the pi's processes
 pi_boot = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/startup.py"])
-#pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/thruster_control.py"])
 pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50",
 "nohup python3 ~/rov_project/thruster_control.py > /dev/null 2>&1 & echo $! > ~/rov_project/thruster_pid.txt"])
 
@@ -24,26 +23,20 @@ client_socket.connect(('192.168.1.50', 8487))
 
 #termine() will close ssh, cameras, and pygame
 def terminate():
+    
+    #Close camera feeds
     print("Closing camera feeds...")
     camera1.close()
     camera2.close()
     client_socket.close()
-
+    
+    #close 
     print("Running shutdown script on Pi...")
     subprocess.run([
-        "ssh", "pi@192.168.1.50", "python3 ~/rov_project/shutdown.py"
-    ], timeout=5)
-
+        "ssh", "pi@192.168.1.50", "python3 ~/rov_project/shutdown.py"], timeout=5)
     print("Killing background SSH subprocesses...")
     pi_thruster_proc.kill()
     pi_boot.kill()
-    #client_socket.close()
-    #thruster_pid = subprocess.check_output([
-    #"ssh", "pi@192.168.1.50", "cat ~/rov_project/thruster_pid.txt"
-    #]).decode().strip()
-    #print(f"Killing process: {thruster_pid}")
-    #subprocess.run(["ssh", "pi@192.168.1.50", f"kill {thruster_pid}"]) #kill using pid
-
     print("Exiting")
     sys.exit(0)
 
@@ -69,10 +62,12 @@ label_y = Height - label_height  # align bottom
 rect_x = pygame.Rect((Width // 6 - label_width // 2, label_y), (label_width, label_height))
 rect_y = pygame.Rect((Width // 2 - label_width // 2, label_y), (label_width, label_height))
 rect_z = pygame.Rect((5 * Width // 6 - label_width // 2, label_y), (label_width, label_height))
+rect_pwlv = pygame.Rect((5*Width//6 - label_width, label_y-label_height), (label_width, label_height)) #pwlv = power level
 UIManager = pygame_gui.UIManager((Width,Height),  "theme.json")
 x_label = pygame_gui.elements.UILabel(rect_x, f"x axis: {0:.2f}", UIManager)
 y_label = pygame_gui.elements.UILabel(rect_y, f"y axis: {0:.2f}", UIManager)
 z_label = pygame_gui.elements.UILabel(rect_z, f"z axis: {0:.2f}", UIManager)
+pwlv_label = pygame_gui.elements.UILabel(rect_pwlv, f"Power Level: {3}",UIManager)
 
 #init joystick
 joystick = None
@@ -87,6 +82,7 @@ x_input = 0
 y_input = 0
 z_input = 0
 deadzone = 0.2
+power_level = 3 #Can be adjusted to make controls more/less sensitive (higher power level = stronger pulse)
 
 #Main loop
 try:
@@ -99,20 +95,46 @@ try:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+            if event.type == pygame.JOYBUTTONDOWN: #Detect button press
+                if event.button == 4: #If left bumper pressed
+                    power_level -= 1
+                    min_power = 1
+                    if power_level < min_power:
+                        power_level = min_power
+                    pwlv_label.set_text(f"Power Level: {power_level}")
+                if event.button == 5: #If right bumper pressed
+                    power_level += 1
+                    max_power = 4
+                    if power_level > max_power:
+                        power_level = max_power
+                    pwlv_label.set_text(f"Power Level: {power_level}")
             UIManager.process_events(event)
 
-        #get joystick inputs
+        #get joystick/trigger inputs
         if joystick is not None:
-            x=joystick.get_axis(0)#left joystick -1 is left to +1 is right (left thruster)
-            y=joystick.get_axis(1) #left joystick -1 is up +1 is down (right thruster)
-            z=joystick.get_axis(2) #right joystick x-axis, used for vertical
-            
-            if abs(y)<deadzone: #define a dead zone
+            x=joystick.get_axis(0)#left joystick -1 is left,  +1 is right 
+            y= joystick.get_axis(1) #left joystick -1 is forward, +1 is backward
+            z=joystick.get_axis(2) #right joystick x-axis, used for tilt horizontal
+            vz=joystick.get_axis(3) #right joystick y-axis, used for vertical
+            td=joystick.get_axis(4) #left trigger, tilt down
+            tu=joystick.get_axis(5) #right trigger, tilt up
+            #Because trigger unpressed = -1 and trigger pressed = 1, we need to map it to  be like the joystick controls
+            td = (td + 1) /2 #maps -1 > 0, 0 > 0.5, 1 > 1
+            tu = (tu + 1) /2
+
+            #define a dead zone
+            if abs(y)<deadzone: 
                 y=0
-            if abs(x)<deadzone: #define a dead zone
+            if abs(x)<deadzone: 
                 x=0
-            if abs(z)<deadzone: #define a dead zone
+            if abs(z)<deadzone:
                 z=0
+            if abs(vz)<deadzone:
+                vz=0
+            if abs(tu)<deadzone:
+                tu=0
+            if abs(td)<deadzone:
+                td=0
 
             time.sleep(.1) #wait .1 seconds
             if x != x_input: #if x changes
@@ -128,10 +150,16 @@ try:
                 z_label.set_text(f"z-axis: {z:.2f}") #update gui
                 z_input = z#update z_input
 
+            #Send data to pi
             data = {
                 "x": round(x, 3),
-                "y": round(y, 3),
-                "z": round(z, 3)}
+                "y": round(-y, 3),
+                "z": round(z, 3),
+                "vz": round(-vz, 3),
+                "powerlv": power_level,
+                "td": round(td, 3),
+                "tu": round(tu, 3),
+                }
             try:
                 client_socket.sendall(json.dumps(data).encode('utf-8'))
             except Exception as e:

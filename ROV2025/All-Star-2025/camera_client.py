@@ -7,7 +7,8 @@ import pygame
 import threading
 
 class CameraClient:
-    def __init__(self, host='192.168.1.50', port=8485):
+    def __init__(self, host='192.168.1.50', camera_number =0):
+        port = 8485 + camera_number
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.client_socket.connect((host, port))
         self.payload_size = struct.calcsize("!I")
