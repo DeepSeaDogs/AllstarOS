@@ -5,12 +5,24 @@ import pickle
 import struct
 import pygame
 import threading
+import time
 
 class CameraClient:
     def __init__(self, host='192.168.1.50', camera_number =0):
         port = 8485 + camera_number
         self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.client_socket.connect((host, port))
+        #self.client_socket.connect((host, port))
+        for _ in range(20):  # Try for ~10 seconds
+            try:
+                print(f"Attempting to connect to camera {camera_number}...")
+                self.client_socket.connect((host, port))
+                print(f"camera {camera_number} connected!")
+                break
+            except ConnectionRefusedError:
+                time.sleep(0.5)
+        else:
+            raise ConnectionRefusedError(f"Could not connect to {host}:{port} after multiple attempts.")
+        
         self.payload_size = struct.calcsize("!I")
         self.data = b""
         self.latest_surface = None
