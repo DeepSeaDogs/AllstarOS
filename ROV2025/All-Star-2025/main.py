@@ -9,17 +9,29 @@ import socket
 import json
 
 #Connect to the pi's processes
-pi_boot = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/startup.py"])
-pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50",
-"nohup python3 ~/rov_project/thruster_control.py > /dev/null 2>&1 & echo $! > ~/rov_project/thruster_pid.txt"])
+try:
+    pi_boot = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/startup.py"])
+    pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50",
+    "nohup python3 ~/rov_project/thruster_control.py > /dev/null 2>&1 & echo $! > ~/rov_project/thruster_pid.txt"])
+except Exception as e:
+    print("Error booting: ", e)
 
 #Get camera feed
-camera1 = CameraClient(camera_number=0) #for /dev/video0
-camera2 = CameraClient(camera_number= 4) #for /dev/video4, uses port 8489
+try:
+    camera1 = CameraClient(camera_number=0) #for /dev/video0
+except ConnectionRefusedError as e:
+    print("Camera 0 not avaiable: ", e)
+try:
+    camera2 = CameraClient(camera_number= 4) #for /dev/video4, uses port 8489
+except ConnectionRefusedError as e:
+    print("camera 4 not available: ", e)
 
 #Connect to thrusters
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client_socket.connect(('192.168.1.50', 8487))
+try:
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('192.168.1.50', 8487))
+except Exception as e:
+    print("can't connect to thrusters: ", e)
 
 #termine() will close ssh, cameras, and pygame
 def terminate():
@@ -174,7 +186,7 @@ try:
             try:
                 client_socket.sendall(json.dumps(data).encode('utf-8'))
             except Exception as e:
-                print("Couldn't send joystick data", e)
+                print("Couldn't send joystick data: ", e)
 
         #Redraw screen
         screen.fill((0,0,0))#Fill screen (background)
@@ -186,13 +198,13 @@ try:
         feed_height = Height // 2
 
         # Left camera
-        frame_surface1 = camera1.get_surface()
+        frame_surface1 = camera1.get_surface() if camera1 else print("Warming: camera 0 missing")
         if frame_surface1:
             frame_surface1 = pygame.transform.scale(frame_surface1, (feed_width, feed_height))
             screen.blit(frame_surface1, (padding, padding))
 
         # Right camera
-        frame_surface2 = camera2.get_surface()
+        frame_surface2 = camera2.get_surface() if camera2 else print("Warning: camera 1 missing")
         if frame_surface2:
             frame_surface2 = pygame.transform.scale(frame_surface2, (feed_width, feed_height))
             screen.blit(frame_surface2, (padding * 2 + feed_width, padding))
