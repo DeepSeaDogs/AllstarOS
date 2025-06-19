@@ -11,8 +11,9 @@ import json
 #Connect to the pi's processes
 try:
     pi_boot = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/startup.py"])
-    pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50",
-    "nohup python3 ~/rov_project/thruster_control.py > /dev/null 2>&1 & echo $! > ~/rov_project/thruster_pid.txt"])
+    time.sleep(2)
+    #pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50",
+    #"nohup python3 ~/rov_project/thruster_control.py > /dev/null 2>&1 & echo $! > ~/rov_project/thruster_pid.txt"])
 except Exception as e:
     print("Error booting: ", e)
 
@@ -21,25 +22,38 @@ try:
     camera1 = CameraClient(camera_number=0) #for /dev/video0
 except ConnectionRefusedError as e:
     print("Camera 0 not avaiable: ", e)
-try:
-    camera2 = CameraClient(camera_number= 4) #for /dev/video4, uses port 8489
-except ConnectionRefusedError as e:
-    print("camera 4 not available: ", e)
+time.sleep(1)
+#try:
+#    camera2 = CameraClient(camera_number= 4) #for /dev/video4, uses port 8489
+#except ConnectionRefusedError as e:
+#    print("camera 4 not available: ", e)
 
 #Connect to thrusters
-try:
-    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    client_socket.connect(('192.168.1.50', 8487))
-except Exception as e:
-    print("can't connect to thrusters: ", e)
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+for _ in range(10):  # Try up to 10 times
+    try:
+        client_socket.connect(('192.168.1.50', 8487))
+        print("Connected to thruster control!")
+        break
+    except Exception as e:
+        print("Retrying thruster socket...", e)
+        time.sleep(1)
+else:
+    print("Failed to connect to thruster control after 10 tries.")
+
+#try:
+#    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#    client_socket.connect(('192.168.1.50', 8487))
+#except Exception as e:
+#    print("can't connect to thrusters: ", e)
 
 #termine() will close ssh, cameras, and pygame
 def terminate():
-    
+    pygame.quit()
     #Close camera feeds
     print("Closing camera feeds...")
     camera1.close()
-    camera2.close()
+    #camera2.close()
     client_socket.close()
     
     #close 
@@ -47,8 +61,9 @@ def terminate():
     subprocess.run([
         "ssh", "pi@192.168.1.50", "python3 ~/rov_project/shutdown.py"], timeout=5)
     print("Killing background SSH subprocesses...")
-    pi_thruster_proc.kill()
-    pi_boot.kill()
+    #pi_thruster_proc.kill()
+    #pi_boot.kill()
+    time.sleep(1.5)
     print("Exiting")
     sys.exit(0)
 
@@ -102,6 +117,8 @@ z_input = 0
 vertical_tilt_input = 0
 deadzone = 0.2
 power_level = 3 #Can be adjusted to make controls more/less sensitive (higher power level = stronger pulse)
+claw_state = 0 #start with claw closed
+
 
 #Main loop
 try:
@@ -110,11 +127,20 @@ try:
     while running:
         time_delta = clock.tick(60) / 1000 #60 fps
 
+
         #Process events (for buttons)
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.JOYBUTTONDOWN: #Detect button press
+                #claw control
+                ##if event.button == 0: #If A pressed
+                #    claw_state = -1 #close claw
+                #elif event.button == 1: #If button B pressed
+                #    claw_state = 1 #open claw
+                #else:
+                #    claw_state = 0 #don't move claw
+                #power level control
                 if event.button == 4: #If left bumper pressed
                     power_level -= 1
                     min_power = 1
@@ -141,6 +167,13 @@ try:
             td = (td + 1) /2 #maps -1 > 0, 0 > 0.5, 1 > 1
             tu = (tu + 1) /2
             vertical_tilt = tu - td #get total tilt for display
+
+            claw_state = 0
+            if joystick.get_button(0):  # A button → open
+                claw_state = 1
+            elif joystick.get_button(1):  # B button → close
+                claw_state = -1
+
 
             #define a dead zone
             if abs(y)<deadzone: 
@@ -182,11 +215,12 @@ try:
                 "powerlv": power_level,
                 "td": round(td, 3),
                 "tu": round(tu, 3),
+                "claw_state": claw_state,
                 }
             try:
                 client_socket.sendall(json.dumps(data).encode('utf-8'))
             except Exception as e:
-                print("Couldn't send joystick data: ", e)
+                print("Couldn't send joystick data:", e)
 
         #Redraw screen
         screen.fill((0,0,0))#Fill screen (background)
@@ -204,10 +238,10 @@ try:
             screen.blit(frame_surface1, (padding, padding))
 
         # Right camera
-        frame_surface2 = camera2.get_surface() if camera2 else print("Warning: camera 1 missing")
-        if frame_surface2:
-            frame_surface2 = pygame.transform.scale(frame_surface2, (feed_width, feed_height))
-            screen.blit(frame_surface2, (padding * 2 + feed_width, padding))
+        #frame_surface2 = camera2.get_surface() if camera2 else print("Warning: camera 1 missing")
+        #if frame_surface2:
+        #    frame_surface2 = pygame.transform.scale(frame_surface2, (feed_width, feed_height))
+        #    screen.blit(frame_surface2, (padding * 2 + feed_width, padding))
 
         UIManager.update(time_delta)
         UIManager.draw_ui(screen)
