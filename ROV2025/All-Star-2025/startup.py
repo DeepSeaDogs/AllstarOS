@@ -14,12 +14,12 @@ try:
     else:
         print("No process found using port 8487.")
 except Exception as e:
-    print("Error killing port 8487 process:", e)
+    print("8487 not open:", e)
 
 try:
     subprocess.run(["fuser", "-k", "8485/tcp"])
-    subprocess.run(["fuser", "-k", "8489/tcp"])
-    #subprocess.run(["fuser", "-k", "8487/tcp"])
+    #subprocess.run(["fuser", "-k", "8489/tcp"])
+    subprocess.run(["fuser", "-k", "8487/tcp"])
 except Exception as e:
     print("Couldn't close ports or no ports to close: ", e)
 
@@ -27,9 +27,6 @@ except Exception as e:
 subprocess.Popen(["python3", "/home/pi/rov_project/camera_stream.py"])
 print("Camera Stream 1 Initialized")
 time.sleep(1)
-# Launch camera stream 2
-subprocess.Popen(["python3", "/home/pi/rov_project/camera_stream2.py"])
-print("Camera Stream 2 Initialized")
 
 #launch thruster control
 subprocess.Popen(

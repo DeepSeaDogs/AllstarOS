@@ -15,9 +15,11 @@ server_socket.listen(1)
 print("Waiting for connection...")
 conn, addr = server_socket.accept()
 print(f"Connected to: {addr}")
+#setup for thruster control
 i2c = busio.I2C(board.SCL, board.SDA)
 pca = PCA9685(i2c)
 pca.frequency = 50  # For ESC/servo PWM
+#setup for claw control
 in1 = DigitalOutputDevice(23)
 in2 = DigitalOutputDevice(24)
 ena = PWMOutputDevice(18)
@@ -37,17 +39,17 @@ def apply_thrust(x, y, turn, z, td, tu, claw_state):
     global thruster_map
     thruster_map = [base] * 6
     global limiter
-    limiter = abs(11 - (power_level * 2))
-    move_forward_backward(y)
-    move_left_right(x)
-    turn_horizontal(turn)
-    move_vertical(z)
-    tilt_up(tu)
-    tilt_down(td)
+    #limiter = abs(11 - (power_level * 2))
+    limiter = 5 - power_level
+    move_forward_backward(y) #y
+    move_left_right(x) #x
+    turn_horizontal(turn) #turn
+    move_vertical(z) #z
+    tilt_up(tu) #tu
+    tilt_down(td) #td
     claw_movement(claw_state)
     for i in range(6):
        pulse = thruster_map[i]
-       print(f"sending {pulse} to {i}")
        pca.channels[i].duty_cycle = pulse_us_to_duty(pulse)
 
      #Two thruster setup (For testing)
@@ -61,42 +63,42 @@ def apply_thrust(x, y, turn, z, td, tu, claw_state):
 def move_forward_backward(y):
      pulse_y = int((y/limiter)*max_delta) #convert input to pulse
      thruster_map[0] += pulse_y #thruster 1 
-     thruster_map[1] += pulse_y #thruster 2
+     thruster_map[1] += -pulse_y  #thruster 2
      thruster_map[4] += pulse_y #thruster 5
-     thruster_map[5] += pulse_y #thruster 6
+     thruster_map[5] += -pulse_y #thruster 6
 
 def move_left_right(x):
      pulse_x = int((x/limiter)*max_delta)
      thruster_map[0] += pulse_x
-     thruster_map[1] += -pulse_x
+     thruster_map[1] += pulse_x
      thruster_map[4] += -pulse_x
-     thruster_map[5] += pulse_x
+     thruster_map[5] += -pulse_x
 
 def turn_horizontal(turn):
      pulse_turn = int((turn/limiter)*max_delta)
      thruster_map[0] += pulse_turn
-     thruster_map[1] += -pulse_turn
+     thruster_map[1] += pulse_turn
      thruster_map[4] += pulse_turn
-     thruster_map[5] += -pulse_turn
+     thruster_map[5] += pulse_turn
 
 def move_vertical(z):
      pulse_vertical = int((z/limiter)*max_delta)
-     thruster_map[2] +=  pulse_vertical #thruster 3
+     thruster_map[2] +=  -pulse_vertical #thruster 3
      thruster_map[3] +=  pulse_vertical #thruster 4
 
 def tilt_down(td):
      pulse_td = int((td/limiter)*max_delta)
      thruster_map[0] += pulse_td
-     thruster_map[1] += pulse_td
+     thruster_map[1] += -pulse_td
      thruster_map[4] += -pulse_td
-     thruster_map[5] += -pulse_td 
+     thruster_map[5] += pulse_td 
 
 def tilt_up(tu):
      pulse_tu = int((tu/limiter)*max_delta)
      thruster_map[0] += -pulse_tu
-     thruster_map[1] += -pulse_tu
+     thruster_map[1] += pulse_tu
      thruster_map[4] += pulse_tu
-     thruster_map[5] += pulse_tu 
+     thruster_map[5] += -pulse_tu 
 
 
 def claw_movement(claw_state):

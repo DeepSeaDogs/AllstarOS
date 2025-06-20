@@ -11,9 +11,6 @@ import json
 #Connect to the pi's processes
 try:
     pi_boot = subprocess.Popen(["ssh", "pi@192.168.1.50", "python3 ~/rov_project/startup.py"])
-    time.sleep(2)
-    #pi_thruster_proc = subprocess.Popen(["ssh", "pi@192.168.1.50",
-    #"nohup python3 ~/rov_project/thruster_control.py > /dev/null 2>&1 & echo $! > ~/rov_project/thruster_pid.txt"])
 except Exception as e:
     print("Error booting: ", e)
 
@@ -22,11 +19,11 @@ try:
     camera1 = CameraClient(camera_number=0) #for /dev/video0
 except ConnectionRefusedError as e:
     print("Camera 0 not avaiable: ", e)
-time.sleep(1)
 #try:
 #    camera2 = CameraClient(camera_number= 4) #for /dev/video4, uses port 8489
 #except ConnectionRefusedError as e:
 #    print("camera 4 not available: ", e)
+
 
 #Connect to thrusters
 client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -39,13 +36,7 @@ for _ in range(10):  # Try up to 10 times
         print("Retrying thruster socket...", e)
         time.sleep(1)
 else:
-    print("Failed to connect to thruster control after 10 tries.")
-
-#try:
-#    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#    client_socket.connect(('192.168.1.50', 8487))
-#except Exception as e:
-#    print("can't connect to thrusters: ", e)
+    print("Failed to connect to thruster control after 10 tries.")  
 
 #termine() will close ssh, cameras, and pygame
 def terminate():
@@ -61,8 +52,7 @@ def terminate():
     subprocess.run([
         "ssh", "pi@192.168.1.50", "python3 ~/rov_project/shutdown.py"], timeout=5)
     print("Killing background SSH subprocesses...")
-    #pi_thruster_proc.kill()
-    #pi_boot.kill()
+    pi_boot.kill()
     time.sleep(1.5)
     print("Exiting")
     sys.exit(0)
@@ -133,13 +123,6 @@ try:
             if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.JOYBUTTONDOWN: #Detect button press
-                #claw control
-                ##if event.button == 0: #If A pressed
-                #    claw_state = -1 #close claw
-                #elif event.button == 1: #If button B pressed
-                #    claw_state = 1 #open claw
-                #else:
-                #    claw_state = 0 #don't move claw
                 #power level control
                 if event.button == 4: #If left bumper pressed
                     power_level -= 1
@@ -152,7 +135,7 @@ try:
                     max_power = 4
                     if power_level > max_power:
                         power_level = max_power
-                    pwlv_label.set_text(f"Power Level: {power_level}")
+                    pwlv_label.set_text(f"power Level: {power_level}")
             UIManager.process_events(event)
 
         #get joystick/trigger inputs
@@ -169,11 +152,10 @@ try:
             vertical_tilt = tu - td #get total tilt for display
 
             claw_state = 0
-            if joystick.get_button(0):  # A button → open
+            if joystick.get_button(1):  # A button → open
                 claw_state = 1
-            elif joystick.get_button(1):  # B button → close
+            elif joystick.get_button(0):  # B button → close
                 claw_state = -1
-
 
             #define a dead zone
             if abs(y)<deadzone: 
@@ -226,10 +208,10 @@ try:
         screen.fill((0,0,0))#Fill screen (background)
     
     #Get camera frames
-        padding = 50
-        available_width = Width - (3 * padding)  # left + between + right
-        feed_width = available_width // 2
-        feed_height = Height // 2
+        padding = 55
+        available_width = Width - (2 * padding)
+        feed_width = available_width 
+        feed_height = label_y - label_height *2
 
         # Left camera
         frame_surface1 = camera1.get_surface() if camera1 else print("Warming: camera 0 missing")
@@ -245,6 +227,7 @@ try:
 
         UIManager.update(time_delta)
         UIManager.draw_ui(screen)
+
         pygame.display.flip()
 
         #clock.tick(30)    
