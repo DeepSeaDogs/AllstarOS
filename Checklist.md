@@ -11,19 +11,20 @@ Use the Emoji Table at the bottom to include status icons
   - 192.168.1.50 (Pi)
   - 192.168.1.1 (PC)
 - :white_check_mark: Configure WiFi
-- :black_square_button: Update system
-- :black_square_button: Install additional packages
-  - :black_square_button: Python
-  - :black_square_button: Camera drivers
-  - :black_square_button: Controller
+- :white_check_mark: Update system
+- :white_check_mark: Install additional packages
+  - :white_check_mark: Python
+  - :white_check_mark: Camera drivers
+  - :white_check_mark: Controller
 
 ## Development
 - :white_check_mark: Get camera working from Pi to PC
-- :black_square_button: Get controller working on Pi
-- :black_square_button: Build Python code
+- :white_check_mark: Get controller working on Pi
+- :white_check_mark: Build Python code
   - lotsa things here
-- :black_square_button: Built PC code?
-  - a few things here
+- :white_check_mark: Built PC code
+  - main
+  - camera_client
 
 ## Design Decisions
 - :white_check_mark: No Arduinos
