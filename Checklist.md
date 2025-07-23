@@ -10,7 +10,7 @@ Use the Emoji Table at the bottom to include status icons
 - :white_check_mark: Configure eth0
   - 192.168.1.50 (Pi)
   - 192.168.1.1 (PC)
-- :black_square_button: Configure WiFi
+- :white_check_mark: Configure WiFi
 - :black_square_button: Update system
 - :black_square_button: Install additional packages
   - :black_square_button: Python
