@@ -19,8 +19,9 @@ class CameraClient:
                 print(f"camera {camera_number} connected!")
                 break
             except ConnectionRefusedError:
-                time.sleep(0.5)
+                time.sleep(0.1)
         else:
+            self.client_socket.close()
             raise ConnectionRefusedError(f"Could not connect to {host}:{port} after multiple attempts.")
         
         self.payload_size = struct.calcsize("!I")

@@ -190,10 +190,10 @@ try:
 
             #Send data to pi
             data = {
-                "x": round(x, 3),
+                "x": round(-x, 3),
                 "y": round(-y, 3),
-                "turn": round(turn, 3),
-                "z": round(-z, 3),
+                "turn": round(-turn, 3),
+                "z": round(z, 3),
                 "powerlv": power_level,
                 "td": round(td, 3),
                 "tu": round(tu, 3),
