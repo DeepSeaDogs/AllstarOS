@@ -1,0 +1,8 @@
+0 - NONE
+1 - thruster 2
+2 - thruster 4
+3 - thruster 3
+4 - thruster 5
+5 - thruster 1
+6 - NONE
+7 - thruster 6
